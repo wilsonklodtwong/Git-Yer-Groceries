@@ -1,81 +1,105 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import Header from './Header.js';
+import StoreItem from './storeItem.js'
+import firebase from './firebase.js';
+
+const dbRef = firebase.database().ref('/stores');
+
+class Form extends React.Component {
+	render() {
+		return (
+			<section className='add-item'>
+				<form onSubmit={this.props.handleSubmit}>
+					<input type="text" name="storename" placeholder="Enter store name" onChange={this.props.handleChange} value={this.props.storename} />
+					<button>Submit</button>
+				</form>
+			</section>
+		)
+	}
+}
 
 class App extends React.Component {
 	constructor() {
 		super();
 		this.state = {
-			username: '',
-			currentItem: '',
-			items: [],
+			storename: '',
+			stores: [],
 		};
 		this.handleChange = this.handleChange.bind(this);
 		this.handleSubmit = this.handleSubmit.bind(this);
 		this.removeItem = this.removeItem.bind(this);
 	}
-	removeItem(index) {
-		const items = Array.from(this.state.items);
-		items.splice(index, 1);
-		this.setState({
-			items: items,
-		});
-
+	removeItem(key) {
+		const itemRef = firebase.database().ref(`/stores/${key}`);
+		itemRef.remove();
 	}
 	handleSubmit(event) {
 		event.preventDefault();
-		const items = Array.from(this.state.items);
 		const newItem = {
-			foodName: this.state.currentItem,
-			user: this.state.username,
-		};
-		items.push(newItem);
-		this.setState({
-			username: '',
-			currentItem: '',
-			items: items,
-		});
-
+			store: this.state.storename,
+		};  
+		if(this.state.storename !== "") {
+			dbRef.push(newItem);
+		}
+		this.state.storename = "";
 	}
+
 	handleChange(event) {
 		this.setState({
 			[event.target.name]: event.target.value,
 		});
 	}
+
+	addListItem(event){
+		event.preventDefault();
+		console.log(event.target.id)
+	}
+
+	componentDidMount() {
+		dbRef.on('value', (snapshot) => {
+			const newItemsArray = [];
+			const firebaseItems = snapshot.val();
+			for (let key in firebaseItems) {
+				const firebaseItem = firebaseItems[key];
+				firebaseItem.id = key;
+				newItemsArray.push(firebaseItem);
+			}
+			this.setState({
+				stores: newItemsArray,
+			});
+		});
+	}
+
 	render() {
-	    return (
-	      <div className='app'>
-	        <header>
-	            <div className='wrapper'>
-	              <h1>Fun Food Friends</h1>
-	            </div>
-	        </header>
-	        <div className='container'>
-	          <section className='add-item'>
-	              <form onSubmit={this.handleSubmit}>
-	                <input type="text" name="username" placeholder="What's your name?" onChange={this.handleChange} value={this.state.username} />
-	                <input type="text" name="currentItem" placeholder="What are you bringing?" onChange={this.handleChange} value={this.state.currentItem} />
-	                <button>Add Item</button>
-	              </form>
-	          </section>
-	          <section className='display-item'>
-	            <div className='wrapper'>
-	              <ul>
-	              	{this.state.items.map((item, i) => {
-	              		return (
-	              			<li>
-	              				<h3>{item.foodName}</h3>
-	              				<p>brought by {item.user}</p>
-	              				<button onClick={() => this.removeItem(i)}>Remove Item</button>
-	              			</li>
-	              		);
-	              	})}
-	              </ul>
-	            </div>
-	          </section>
-	        </div>
-	      </div>
-	    );
-	  }
+		return (
+			<div className='app'>
+				<Header />
+				<div className='container'>
+					<Form 
+						handleChange={this.handleChange} 
+						handleSubmit={this.handleSubmit}
+						storename={this.state.storename}
+						currentItem={this.state.currentItem}
+					/>
+					<section className='display-item'>
+						<div className='wrapper'>
+							<ul>
+								{this.state.stores.map(store => {
+									return (
+										<StoreItem 
+										storeInfo={store} 
+										removeItem={this.removeItem}
+										/>
+									);
+								})}
+							</ul>
+						</div>
+					</section>
+				</div>
+			</div>
+		);
+	}
 }
 
 ReactDOM.render(<App />, document.getElementById('app'));
