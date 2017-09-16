@@ -68,7 +68,6 @@ class storeItem extends React.Component {
 		}
 
 		return (
-			<div>
 				<li className="storeMain" key={this.props.storeInfo.id}>
 					<div className="card-header">
 						<h3>{this.props.storeInfo.store}</h3>
@@ -89,7 +88,6 @@ class storeItem extends React.Component {
 						<button className="addButton">Add Item</button>
 					</form>
 				</li>
-			</div>
 		)
 	}
 }
